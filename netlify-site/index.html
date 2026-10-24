@@ -62,7 +62,7 @@ ul{margin:8px 0 0;padding-left:18px}
 <h1>2 MOVES · 2 TIMERS</h1>
 <p class="sub">Work, rest, repeat. Each exercise has its own timer.</p>
 
-<div class="sync"><span id="lk">Loading…</span><button class="ghost" id="lock">🔒 Unlock</button><button class="ghost" id="sv">Save now</button></div>
+<div class="sync"><span id="lk">Loading…</span><button class="ghost" id="lock">🔒 Unlock</button></div>
 <div class="modes">
   <button id="mN" class="on">💪 Normal · 3 sets</button>
   <button id="mT">😴 Tired · 1 set</button>
@@ -104,7 +104,7 @@ function setSt(t,c){var e=$("lk");e.textContent=t;e.className=c||""}
 function same(a,b){a=a||{};b=b||{};var ka=Object.keys(a),kb=Object.keys(b);if(ka.length!=kb.length)return false;
   for(var i=0;i<ka.length;i++){var x=a[ka[i]],y=b[ka[i]];if(!y||!!x.p!=!!y.p||!!x.r!=!!y.r||!!x.w!=!!y.w)return false}return true}
 function push(){
-  if(!loaded){setSt("⚠️ Can’t reach server yet. Tap Save now","bad");return}
+  if(!loaded){setSt("⚠️ Can’t reach server yet. Tap Unlock to retry","bad");return}
   if(!EK){setSt("🔒 View only: tap Unlock to save","bad");return}
   setSt("Saving…");
   fetch("/api/progress",{method:"POST",headers:{"content-type":"application/json","x-key":EK},body:JSON.stringify({days:S.days,cfg:S.cfg})})
@@ -112,12 +112,18 @@ function push(){
   .then(function(r){return r.json()})
   .then(function(d){if(!same(d.days,S.days)||((d.cfg&&d.cfg.count)||0)!=(S.cfg.count||0))throw "mismatch";$("cs").textContent="Server has "+((d.cfg&&d.cfg.count)||0)+" ✓";
     setSt("✅ Saved & verified at "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),"good")})
-  .catch(function(e){setSt(e=="key"?"❌ Wrong password. Tap Unlock":"⚠️ NOT saved. Tap Save now","bad")})}
+  .then(function(){tries=0})
+  .catch(function(e){
+    if(e=="key"){EK="";try{localStorage.removeItem("ek")}catch(x){}lockBtn();setSt("❌ Wrong password. Tap Unlock to try again","bad");return}
+    if(tries<3){tries++;setSt("⚠️ Not saved yet, retrying…","bad");setTimeout(push,5000)}
+    else setSt("⚠️ NOT saved. Check your internet, then tap Unlock","bad")})}
+var tries=0;
+function lockBtn(){$("lock").textContent=EK?"🔓 Unlocked":"🔒 Unlock"}
 function refresh(){cdraw();EX.forEach(function(e){if(!T[e.k].run)draw(e.k)});stats();wdraw()}
 function loadServer(){return fetch("/api/progress",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
   var had=d&&d.days;if(had){S.days=d.days;if(d.cfg)S.cfg=d.cfg}
   loaded=true;refresh();$("cs").textContent="Loaded from server: "+((d&&d.cfg&&d.cfg.count)||0);
-  if(EK){if(had)setSt("☁️ Connected · saving is on","good");else push()}else setSt("🔒 View only: tap Unlock to save","bad")
+  if(EK)push();else setSt("🔒 View only: tap Unlock to save","bad")
 }).catch(function(){setSt("⚠️ Can’t reach server","bad")})}
 
 var AC=null;
@@ -202,8 +208,8 @@ $("mN").onclick=function(){mode(false)};
 $("mT").onclick=function(){mode(true)};
 EX.forEach(mk);
 mode(S.tired);EX.forEach(function(e){draw(e.k)});stats();
-$("lock").onclick=function(){var k=prompt("Enter your edit key");if(k){EK=k;try{localStorage.setItem("ek",k)}catch(e){}loaded?push():loadServer()}};
-$("sv").onclick=function(){loaded?push():loadServer()};
+$("lock").onclick=function(){var k=prompt("Enter your password");if(k){EK=k;try{localStorage.setItem("ek",k)}catch(e){}lockBtn();tries=0;loaded?push():loadServer()}};
+lockBtn();
 
 var WU=[["Arm circles forward","Arms straight out to the sides. Make big, slow circles forward."],["Arm circles backward","Same big circles, now backward."],["Arm swings","Swing your arms wide open, then hug yourself. Repeat."],["Wrist circles","Fingers interlaced, rotate both wrists. Push-ups load your wrists."],["Cat-cow","On hands and knees: round your back up, then drop it and look up."],["Slow push-ups","Easy and slow, knees down if you want. 3 seconds down, 3 seconds up."]];
 var W={i:0,left:30,run:false,iv:null,done:false};
