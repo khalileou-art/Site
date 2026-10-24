@@ -56,6 +56,9 @@ ul{margin:8px 0 0;padding-left:18px}
 .sync{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 #lk{flex:1;min-width:150px;font-size:13px;color:var(--mute)}#lk.good{color:var(--ok)}#lk.bad{color:#ffb020}
 .sync button{padding:8px 12px;font-size:13px}
+#bnr{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:calc(100% - 32px);max-width:440px;z-index:20;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:2px solid var(--rest);border-radius:18px;padding:10px 14px;box-shadow:0 8px 30px #0008}
+#bnr b{font-size:26px;font-variant-numeric:tabular-nums}
+#bnr button{flex:none;padding:8px 16px}
 </style>
 </head>
 <body>
@@ -93,6 +96,7 @@ ul{margin:8px 0 0;padding-left:18px}
 </div>
 <p class="sub" style="font-size:13px">Do as many clean reps as you can during WORK. Stop 1-2 reps before you collapse.</p>
 
+<div id="bnr"><span>☕ Break <b id="bt2">1:30</b></span><button id="bsk" style="background:var(--rest)">Skip</button></div>
 <script>
 var KEY="two-timers-v1",S={tired:false,cfg:{p:{w:40,r:60},r:{w:40,r:60}},days:{}};
 try{var q=localStorage.getItem(KEY);if(q)S=Object.assign(S,JSON.parse(q))}catch(e){}
@@ -119,7 +123,7 @@ function push(){
     else setSt("⚠️ NOT saved. Check your internet, then tap Unlock","bad")})}
 var tries=0;
 function lockBtn(){$("lock").textContent=EK?"🔓 Unlocked":"🔒 Unlock"}
-function refresh(){cdraw();EX.forEach(function(e){if(!T[e.k].run)draw(e.k)});stats();wdraw()}
+function refresh(){cdraw();bdraw();EX.forEach(function(e){if(!T[e.k].run)draw(e.k)});stats();wdraw()}
 function loadServer(){return fetch("/api/progress",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
   var had=d&&d.days;if(had){S.days=d.days;if(d.cfg)S.cfg=d.cfg}
   loaded=true;refresh();$("cs").textContent="Loaded from server: "+((d&&d.cfg&&d.cfg.count)||0);
@@ -184,7 +188,7 @@ function toggle(k){
 function reset(k){var t=T[k];clearInterval(t.iv);t.run=false;t.ph="idle";t.set=1;draw(k)}
 function finish(k){
   var t=T[k];clearInterval(t.iv);t.run=false;t.ph="done";beep(1200,.6);
-  var d=S.days[dk()]||(S.days[dk()]={});d[k]=1;save();draw(k);stats();
+  var d=S.days[dk()]||(S.days[dk()]={});d[k]=1;save();draw(k);stats();if(k=="p")bstart();
 }
 function isDone(d){return d&&d.p&&d.r}
 function stats(){
@@ -230,7 +234,7 @@ function wtick(){
   if(W.left<=0){
     W.i++;
     if(W.i>=WU.length){clearInterval(W.iv);W.run=false;W.done=true;beep(1200,.6);
-      var d=S.days[dk()]||(S.days[dk()]={});d.w=1;save()}
+      var d=S.days[dk()]||(S.days[dk()]={});d.w=1;save();bstart()}
     else{W.left=30;beep(1000,.4)}
   }
   wdraw();
@@ -245,6 +249,30 @@ function cdraw(){$("cn").textContent=S.cfg.count||0}
 $("c1").onclick=function(){S.cfg.count=(S.cfg.count||0)+1;cdraw();$("cs").textContent="";save()};
 $("c0").onclick=function(){S.cfg.count=0;cdraw();save()};
 cdraw();
+
+var B={left:0,run:false,iv:null};
+function bd(){return S.cfg.brk||90}
+function bdraw(){
+  $("bt").textContent=B.run?fmt(B.left):fmt(bd());$("bt2").textContent=fmt(B.left);
+  $("bnr").style.display=B.run?"flex":"none";
+  $("bgo").textContent=B.run?"Skip break":"Start break";$("bdur").textContent=bd()+"s";
+}
+function bstop(){clearInterval(B.iv);B.run=false;bdraw()}
+function bstart(){clearInterval(B.iv);B.left=bd();B.run=true;beep(700,.1);B.iv=setInterval(btick,1000);bdraw()}
+function btick(){
+  B.left--;
+  if(B.left<=3&&B.left>0)beep(660,.08);
+  if(B.left<=0){bstop();beep(1000,.6);$("bt").textContent="GO! 💥";return}
+  bdraw();
+}
+var bk=document.createElement("div");bk.className="card";bk.id="bk";
+bk.innerHTML='<div class="name">☕ Break between exercises</div><div class="hit">Starts by itself after the warm-up and after push-ups. Breathe, drink water, get ready.</div><div class="time" id="bt" style="text-align:center;font-size:56px;margin:10px 0">1:30</div><div class="btns"><button id="bgo" style="background:var(--rest)">Start break</button></div><div class="cfg" style="grid-template-columns:1fr"><div><label>Length</label><button id="bm">−</button><b id="bdur"></b><button id="bp">+</button></div></div>';
+$("cards").insertBefore(bk,$("cr"));
+$("bgo").onclick=function(){B.run?bstop():bstart()};
+$("bsk").onclick=bstop;
+$("bm").onclick=function(){S.cfg.brk=Math.max(15,bd()-15);save();bdraw()};
+$("bp").onclick=function(){S.cfg.brk=Math.min(300,bd()+15);save();bdraw()};
+bdraw();
 wdraw();loadServer();
 </script>
 </body>
