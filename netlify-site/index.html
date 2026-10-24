@@ -53,24 +53,43 @@ ul{margin:8px 0 0;padding-left:18px}
 .lbl{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mute);margin-bottom:6px}
 .big{font-size:30px;font-weight:800}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.two .card{margin:0}
+.sync{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+#lk{flex:1;min-width:150px;font-size:13px;color:var(--mute)}#lk.good{color:var(--ok)}#lk.bad{color:#ffb020}
+.sync button{padding:8px 12px;font-size:13px}
 </style>
 </head>
 <body>
 <h1>2 MOVES · 2 TIMERS</h1>
 <p class="sub">Work, rest, repeat. Each exercise has its own timer.</p>
 
-<p class="sub"><button class="ghost" id="lock">🔒 Unlock saving</button><span id="lk"></span></p>
+<div class="sync"><span id="lk">Loading…</span><button class="ghost" id="lock">🔒 Unlock</button><button class="ghost" id="sv">Save now</button></div>
 <div class="modes">
   <button id="mN" class="on">💪 Normal · 3 sets</button>
   <button id="mT">😴 Tired · 1 set</button>
 </div>
 <div class="win" id="win">Day done. Streak alive 🔥</div>
+<div class="card" id="wu">
+  <div class="name">🔥 Warm-up · 3 min</div>
+  <div class="hit">Do this first. It wakes up your shoulders, wrists and back so you don’t get hurt.</div>
+  <div class="ringbox" id="rbw"><svg viewBox="0 0 120 120"><circle class="bgc" cx="60" cy="60" r="52"/><circle class="fg" id="fgw" cx="60" cy="60" r="52"/></svg><div class="mid"><div class="ph" id="phw">READY</div><div class="time" id="tmw">0:30</div><div class="st" id="stw"></div></div></div>
+  <div class="name" id="wname" style="text-align:center;font-size:18px"></div>
+  <div class="hit" id="wcue" style="text-align:center;min-height:38px;margin-bottom:10px"></div>
+  <div class="btns"><button id="gow">Start warm-up</button><button class="ghost" id="rsw">Reset</button></div>
+  <details><summary>Why warm up?</summary><ul><li>Cold muscles and joints get hurt more easily.</li><li>It raises your heart rate and loosens your shoulders and wrists.</li><li>Keep every move slow and easy. This is not a workout.</li></ul></details>
+</div>
 <div id="cards"></div>
 
 <div class="card"><div class="lbl">Last 7 days</div><div class="week" id="week"></div></div>
 <div class="two">
   <div class="card"><div class="lbl">Streak</div><div class="big" id="streak">0</div></div>
   <div class="card"><div class="lbl">Days done</div><div class="big" id="count">0</div></div>
+</div>
+<div class="card" id="tc">
+  <div class="name">🧪 Test counter</div>
+  <div class="hit">Checks that saving works. Tap +1, wait for the green ✅ at the top, then refresh the page. The number must stay.</div>
+  <div class="big" id="cn" style="text-align:center;font-size:64px;margin:10px 0">0</div>
+  <div class="btns"><button id="c1">+1</button><button class="ghost" id="c0">Reset</button></div>
+  <div class="hit" id="cs" style="text-align:center;margin-top:8px"></div>
 </div>
 <p class="sub" style="font-size:13px">Do as many clean reps as you can during WORK. Stop 1-2 reps before you collapse.</p>
 
@@ -81,9 +100,25 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push()
 function dk(d){d=d||new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
 var $=function(i){return document.getElementById(i)};
 var EK="",loaded=false;try{EK=localStorage.getItem("ek")||""}catch(e){}
-function push(){if(!EK||!loaded)return;
+function setSt(t,c){var e=$("lk");e.textContent=t;e.className=c||""}
+function same(a,b){a=a||{};b=b||{};var ka=Object.keys(a),kb=Object.keys(b);if(ka.length!=kb.length)return false;
+  for(var i=0;i<ka.length;i++){var x=a[ka[i]],y=b[ka[i]];if(!y||!!x.p!=!!y.p||!!x.r!=!!y.r||!!x.w!=!!y.w)return false}return true}
+function push(){
+  if(!loaded){setSt("⚠️ Can’t reach server yet. Tap Save now","bad");return}
+  if(!EK){setSt("🔒 View only: tap Unlock to save","bad");return}
+  setSt("Saving…");
   fetch("/api/progress",{method:"POST",headers:{"content-type":"application/json","x-key":EK},body:JSON.stringify({days:S.days,cfg:S.cfg})})
-  .then(function(r){$("lk").textContent=r.ok?" ☁️ saved":" ❌ wrong key"}).catch(function(){$("lk").textContent=" ⚠️ offline"})}
+  .then(function(r){if(r.status==401)throw "key";if(!r.ok)throw "srv";return fetch("/api/progress",{cache:"no-store"})})
+  .then(function(r){return r.json()})
+  .then(function(d){if(!same(d.days,S.days)||((d.cfg&&d.cfg.count)||0)!=(S.cfg.count||0))throw "mismatch";$("cs").textContent="Server has "+((d.cfg&&d.cfg.count)||0)+" ✓";
+    setSt("✅ Saved & verified at "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),"good")})
+  .catch(function(e){setSt(e=="key"?"❌ Wrong password. Tap Unlock":"⚠️ NOT saved. Tap Save now","bad")})}
+function refresh(){cdraw();EX.forEach(function(e){if(!T[e.k].run)draw(e.k)});stats();wdraw()}
+function loadServer(){return fetch("/api/progress",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
+  var had=d&&d.days;if(had){S.days=d.days;if(d.cfg)S.cfg=d.cfg}
+  loaded=true;refresh();$("cs").textContent="Loaded from server: "+((d&&d.cfg&&d.cfg.count)||0);
+  if(EK){if(had)setSt("☁️ Connected · saving is on","good");else push()}else setSt("🔒 View only: tap Unlock to save","bad")
+}).catch(function(){setSt("⚠️ Can’t reach server","bad")})}
 
 var AC=null;
 function beep(f,d){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}if(d>.2&&navigator.vibrate)try{navigator.vibrate(200)}catch(e){}}
@@ -167,12 +202,44 @@ $("mN").onclick=function(){mode(false)};
 $("mT").onclick=function(){mode(true)};
 EX.forEach(mk);
 mode(S.tired);EX.forEach(function(e){draw(e.k)});stats();
-$("lock").onclick=function(){var k=prompt("Enter your edit key");if(k){EK=k;try{localStorage.setItem("ek",k)}catch(e){}push()}};
-if(EK)$("lk").textContent=" ☁️ saving on";
-fetch("/api/progress").then(function(r){return r.json()}).then(function(d){
-  if(d&&d.days){S.days=d.days;if(d.cfg)S.cfg=d.cfg}
-  loaded=true;EX.forEach(function(e){if(!T[e.k].run)draw(e.k)});stats();if(EK&&!(d&&d.days))push()
-}).catch(function(){});
+$("lock").onclick=function(){var k=prompt("Enter your edit key");if(k){EK=k;try{localStorage.setItem("ek",k)}catch(e){}loaded?push():loadServer()}};
+$("sv").onclick=function(){loaded?push():loadServer()};
+
+var WU=[["Arm circles forward","Arms straight out to the sides. Make big, slow circles forward."],["Arm circles backward","Same big circles, now backward."],["Arm swings","Swing your arms wide open, then hug yourself. Repeat."],["Wrist circles","Fingers interlaced, rotate both wrists. Push-ups load your wrists."],["Cat-cow","On hands and knees: round your back up, then drop it and look up."],["Slow push-ups","Easy and slow, knees down if you want. 3 seconds down, 3 seconds up."]];
+var W={i:0,left:30,run:false,iv:null,done:false};
+function wdraw(){
+  var d=W.done;
+  $("rbw").className="ringbox "+(d?"done":W.run?"work":"");
+  $("phw").textContent=d?"DONE":W.run?"GO":(W.i>0||W.left<30)?"PAUSED":"READY";
+  $("tmw").textContent=d?"✓":fmt(W.left);
+  $("stw").textContent=d?"":"Move "+(W.i+1)+" of "+WU.length;
+  $("wname").textContent=d?"Warm-up done. Now do your sets 💪":WU[W.i][0];
+  $("wcue").textContent=d?"":WU[W.i][1];
+  $("fgw").style.strokeDashoffset=d?0:327*(1-W.left/30);
+  $("gow").textContent=W.run?"Pause":d?"Again":(W.i>0||W.left<30)?"Resume":"Start warm-up";
+}
+function wtick(){
+  W.left--;
+  if(W.left<=3&&W.left>0)beep(660,.08);
+  if(W.left<=0){
+    W.i++;
+    if(W.i>=WU.length){clearInterval(W.iv);W.run=false;W.done=true;beep(1200,.6);
+      var d=S.days[dk()]||(S.days[dk()]={});d.w=1;save()}
+    else{W.left=30;beep(1000,.4)}
+  }
+  wdraw();
+}
+$("gow").onclick=function(){
+  if(W.run){clearInterval(W.iv);W.run=false;wdraw();return}
+  if(W.done){W.done=false;W.i=0;W.left=30}
+  W.run=true;beep(700,.1);W.iv=setInterval(wtick,1000);wdraw();
+};
+$("rsw").onclick=function(){clearInterval(W.iv);W.run=false;W.done=false;W.i=0;W.left=30;wdraw()};
+function cdraw(){$("cn").textContent=S.cfg.count||0}
+$("c1").onclick=function(){S.cfg.count=(S.cfg.count||0)+1;cdraw();$("cs").textContent="";save()};
+$("c0").onclick=function(){S.cfg.count=0;cdraw();save()};
+cdraw();
+wdraw();loadServer();
 </script>
 </body>
 </html>
