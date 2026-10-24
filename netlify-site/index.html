@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Upper Body · 2 Timers</title>
+<style>
+:root{--bg:#0b0d14;--card:#151926;--ink:#f2f4ff;--mute:#8b91ab;--work:#ff4d3d;--rest:#2bb7ff;--ok:#2be28a;--line:#262c42;color-scheme:dark;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f4f5fb;--card:#fff;--ink:#12142a;--mute:#6b7190;--line:#dfe2f0;color-scheme:light}}
+*{box-sizing:border-box}
+body{margin:0 auto;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:480px;padding:20px 16px 40px}
+h1{font-size:30px;letter-spacing:-1px;margin:6px 0 2px;background:linear-gradient(90deg,#ff4d3d,#ffb020);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mute);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:14px}
+.top{display:flex;gap:12px;align-items:center}
+.name{font-size:20px;font-weight:800}
+.hit{font-size:13px;color:var(--mute);margin-top:2px}
+svg.fig{width:110px;height:70px;flex:none;background:var(--bg);border-radius:14px}
+.ln{stroke:var(--ink);stroke-width:5;stroke-linecap:round;fill:none}
+.ringbox{position:relative;width:220px;height:220px;margin:14px auto 6px}
+.ringbox svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ringbox circle{fill:none;stroke-width:10}
+.bgc{stroke:var(--line)}
+.fg{stroke:var(--mute);stroke-linecap:round;stroke-dasharray:327;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear,stroke .3s}
+.work .fg{stroke:var(--work)}.rest .fg{stroke:var(--rest)}.done .fg{stroke:var(--ok)}
+.mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ph{font-size:15px;font-weight:800;letter-spacing:3px;color:var(--mute)}
+.work .ph{color:var(--work)}.rest .ph{color:var(--rest)}.done .ph{color:var(--ok)}
+.time{font-size:60px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.st{font-size:14px;color:var(--mute)}
+.btns{display:flex;gap:10px}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:13px;font-weight:800;color:#fff;background:var(--work);flex:1}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);flex:none;padding:13px 18px}
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.cfg div{background:var(--bg);border-radius:14px;padding:8px 10px;text-align:center}
+.cfg label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mute)}
+.cfg b{font-size:20px;margin:0 8px;font-variant-numeric:tabular-nums}
+.cfg button{background:var(--card);border:1px solid var(--line);color:var(--ink);padding:2px 10px;flex:none;font-size:18px;border-radius:10px}
+details{margin-top:12px;color:var(--mute);font-size:14px;line-height:1.55}
+summary{cursor:pointer;color:var(--ink);font-weight:600}
+ul{margin:8px 0 0;padding-left:18px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;margin-bottom:14px}
+.modes button{background:transparent;color:var(--mute);padding:10px}
+.modes button.on{background:var(--work);color:#fff}
+.modes button.on.t{background:#ffb020;color:#2a1a00}
+.win{display:none;text-align:center;font-size:20px;font-weight:800;padding:14px;border-radius:16px;margin-bottom:14px;background:linear-gradient(90deg,var(--ok),#7af0b8);color:#06210f}
+.week{display:flex;justify-content:space-between}
+.day{text-align:center;font-size:12px;color:var(--mute)}
+.dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);margin:6px auto 0;display:grid;place-items:center}
+.dot.on{background:var(--work);border-color:var(--work);color:#fff}
+.dot.today{border-color:#ffb020}
+.lbl{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mute);margin-bottom:6px}
+.big{font-size:30px;font-weight:800}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.two .card{margin:0}
+</style>
+</head>
+<body>
+<h1>2 MOVES · 2 TIMERS</h1>
+<p class="sub">Work, rest, repeat. Each exercise has its own timer.</p>
+
+<p class="sub"><button class="ghost" id="lock">🔒 Unlock saving</button><span id="lk"></span></p>
+<div class="modes">
+  <button id="mN" class="on">💪 Normal · 3 sets</button>
+  <button id="mT">😴 Tired · 1 set</button>
+</div>
+<div class="win" id="win">Day done. Streak alive 🔥</div>
+<div id="cards"></div>
+
+<div class="card"><div class="lbl">Last 7 days</div><div class="week" id="week"></div></div>
+<div class="two">
+  <div class="card"><div class="lbl">Streak</div><div class="big" id="streak">0</div></div>
+  <div class="card"><div class="lbl">Days done</div><div class="big" id="count">0</div></div>
+</div>
+<p class="sub" style="font-size:13px">Do as many clean reps as you can during WORK. Stop 1-2 reps before you collapse.</p>
+
+<script>
+var KEY="two-timers-v1",S={tired:false,cfg:{p:{w:40,r:60},r:{w:40,r:60}},days:{}};
+try{var q=localStorage.getItem(KEY);if(q)S=Object.assign(S,JSON.parse(q))}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push()}
+function dk(d){d=d||new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+var $=function(i){return document.getElementById(i)};
+var EK="",loaded=false;try{EK=localStorage.getItem("ek")||""}catch(e){}
+function push(){if(!EK||!loaded)return;
+  fetch("/api/progress",{method:"POST",headers:{"content-type":"application/json","x-key":EK},body:JSON.stringify({days:S.days,cfg:S.cfg})})
+  .then(function(r){$("lk").textContent=r.ok?" ☁️ saved":" ❌ wrong key"}).catch(function(){$("lk").textContent=" ⚠️ offline"})}
+
+var AC=null;
+function beep(f,d){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}if(d>.2&&navigator.vibrate)try{navigator.vibrate(200)}catch(e){}}
+function sets(){return S.tired?1:3}
+var EX=[
+{k:"p",name:"Push-ups",hit:"Chest · shoulders · triceps · core",
+ fig:'<line x1="10" y1="104" x2="190" y2="104" stroke="var(--line)" stroke-width="3"/><line class="ln" x1="175" y1="100" x2="50" y2="70"><animate attributeName="y2" values="56;92;56" dur="2.4s" repeatCount="indefinite"/></line><line class="ln" x1="50" y1="70" x2="50" y2="102"><animate attributeName="y1" values="56;92;56" dur="2.4s" repeatCount="indefinite"/></line><circle cx="34" cy="62" r="9" fill="var(--work)"><animate attributeName="cy" values="48;84;48" dur="2.4s" repeatCount="indefinite"/></circle>',
+ tips:["Hands a bit wider than shoulders, body straight from head to heels.","Squeeze butt and abs so your hips don’t sag.","Chest down to a fist from the floor, then push the floor away.","Elbows about 45° from your body.","Too hard: knees down. Too easy: lower for 3 seconds."]},
+{k:"r",name:"Backpack rows",hit:"Back · biceps · rear shoulders",
+ fig:'<line x1="10" y1="108" x2="190" y2="108" stroke="var(--line)" stroke-width="3"/><line class="ln" x1="140" y1="60" x2="135" y2="106"/><line class="ln" x1="140" y1="60" x2="70" y2="42"/><circle cx="58" cy="40" r="9" fill="var(--work)"/><line class="ln" x1="75" y1="45" x2="75" y2="88"><animate attributeName="x2" values="75;92;75" dur="2.4s" repeatCount="indefinite"/><animate attributeName="y2" values="88;62;88" dur="2.4s" repeatCount="indefinite"/></line><rect width="22" height="22" rx="5" fill="#ffb020" x="64" y="88"><animate attributeName="x" values="64;81;64" dur="2.4s" repeatCount="indefinite"/><animate attributeName="y" values="88;62;88" dur="2.4s" repeatCount="indefinite"/></rect>',
+ tips:["Backpack with books, about 5-8kg to start.","Knees slightly bent, hips back, lean forward with a flat back.","Pull the bag to your belly button, elbows toward the ceiling.","Squeeze shoulder blades for 1 second, lower slowly.","Too light: add books or pause 2 seconds at the top."]}
+];
+var T={};
+function mk(e){
+  var k=e.k;T[k]={ph:"idle",left:0,tot:1,set:1,run:false,iv:null};
+  var c=document.createElement("div");c.className="card";c.id="c"+k;
+  c.innerHTML='<div class="top"><svg class="fig" viewBox="0 0 200 120">'+e.fig+'</svg><div><div class="name">'+e.name+'</div><div class="hit">'+e.hit+'</div></div></div>'+
+  '<div class="ringbox" id="rb'+k+'"><svg viewBox="0 0 120 120"><circle class="bgc" cx="60" cy="60" r="52"/><circle class="fg" id="fg'+k+'" cx="60" cy="60" r="52"/></svg><div class="mid"><div class="ph" id="ph'+k+'">READY</div><div class="time" id="tm'+k+'">0:40</div><div class="st" id="st'+k+'"></div></div></div>'+
+  '<div class="btns"><button id="go'+k+'">Start</button><button class="ghost" id="rs'+k+'">Reset</button></div>'+
+  '<div class="cfg"><div><label>Work</label><button data-k="'+k+'" data-f="w" data-d="-5">−</button><b id="w'+k+'"></b><button data-k="'+k+'" data-f="w" data-d="5">+</button></div><div><label>Rest</label><button data-k="'+k+'" data-f="r" data-d="-5">−</button><b id="r'+k+'"></b><button data-k="'+k+'" data-f="r" data-d="5">+</button></div></div>'+
+  '<details><summary>How to do it</summary><ul><li>'+e.tips.join("</li><li>")+'</li></ul></details>';
+  $("cards").appendChild(c);
+  $("go"+k).onclick=function(){toggle(k)};
+  $("rs"+k).onclick=function(){reset(k)};
+}
+function fmt(s){return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+function draw(k){
+  var t=T[k],rb=$("rb"+k);
+  rb.className="ringbox "+(t.ph=="get ready"?"":t.ph);
+  var lab={idle:"READY","get ready":"GET SET",work:"WORK",rest:"REST",done:"DONE"}[t.ph];
+  $("ph"+k).textContent=lab;
+  $("tm"+k).textContent=t.ph=="done"?"✓":fmt(t.ph=="idle"?S.cfg[k].w:t.left);
+  $("st"+k).textContent=t.ph=="done"?"All sets complete":"Set "+Math.min(t.set,sets())+" of "+sets();
+  $("fg"+k).style.strokeDashoffset=t.ph=="idle"||t.ph=="done"?0:327*(1-t.left/t.tot);
+  $("go"+k).textContent=t.run?"Pause":(t.ph=="idle"?"Start":t.ph=="done"?"Again":"Resume");
+  $("w"+k).textContent=S.cfg[k].w+"s";$("r"+k).textContent=S.cfg[k].r+"s";
+}
+function phase(k,p,secs){var t=T[k];t.ph=p;t.left=secs;t.tot=secs}
+function tick(k){
+  var t=T[k];t.left--;
+  if(t.left<=3&&t.left>0)beep(660,.08);
+  if(t.left<=0){
+    if(t.ph=="get ready"){phase(k,"work",S.cfg[k].w);beep(1000,.5)}
+    else if(t.ph=="work"){
+      if(t.set>=sets()){finish(k);return}
+      phase(k,"rest",S.cfg[k].r);beep(500,.5)}
+    else if(t.ph=="rest"){t.set++;phase(k,"work",S.cfg[k].w);beep(1000,.5)}
+  }
+  draw(k);
+}
+function toggle(k){
+  var t=T[k];
+  if(t.run){clearInterval(t.iv);t.run=false;draw(k);return}
+  if(t.ph=="idle"||t.ph=="done"){t.set=1;phase(k,"get ready",5)}
+  t.run=true;t.iv=setInterval(function(){tick(k)},1000);beep(700,.1);draw(k);
+}
+function reset(k){var t=T[k];clearInterval(t.iv);t.run=false;t.ph="idle";t.set=1;draw(k)}
+function finish(k){
+  var t=T[k];clearInterval(t.iv);t.run=false;t.ph="done";beep(1200,.6);
+  var d=S.days[dk()]||(S.days[dk()]={});d[k]=1;save();draw(k);stats();
+}
+function isDone(d){return d&&d.p&&d.r}
+function stats(){
+  var n=new Date(),L=["S","M","T","W","T","F","S"],w="";
+  for(var i=6;i>=0;i--){var x=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i),v=isDone(S.days[dk(x)]);
+    w+='<div class="day">'+L[x.getDay()]+'<div class="dot'+(v?" on":"")+(i==0?" today":"")+'">'+(v?"✓":"")+'</div></div>'}
+  $("week").innerHTML=w;
+  var c=0,k=isDone(S.days[dk()])?0:1,st=0;
+  for(var key in S.days)if(isDone(S.days[key]))c++;
+  while(isDone(S.days[dk(new Date(n.getFullYear(),n.getMonth(),n.getDate()-k))])){st++;k++}
+  $("streak").textContent=st;$("count").textContent=c;
+  $("win").style.display=isDone(S.days[dk()])?"block":"none";
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-f]");if(!b)return;
+  var k=b.dataset.k,f=b.dataset.f;
+  S.cfg[k][f]=Math.max(10,Math.min(180,S.cfg[k][f]+(+b.dataset.d)));save();draw(k);
+});
+function mode(t){S.tired=t;$("mN").className=t?"":"on";$("mT").className=t?"on t":"";save();for(var k in T)if(!T[k].run)draw(k)}
+$("mN").onclick=function(){mode(false)};
+$("mT").onclick=function(){mode(true)};
+EX.forEach(mk);
+mode(S.tired);EX.forEach(function(e){draw(e.k)});stats();
+$("lock").onclick=function(){var k=prompt("Enter your edit key");if(k){EK=k;try{localStorage.setItem("ek",k)}catch(e){}push()}};
+if(EK)$("lk").textContent=" ☁️ saving on";
+fetch("/api/progress").then(function(r){return r.json()}).then(function(d){
+  if(d&&d.days){S.days=d.days;if(d.cfg)S.cfg=d.cfg}
+  loaded=true;EX.forEach(function(e){if(!T[e.k].run)draw(e.k)});stats();if(EK&&!(d&&d.days))push()
+}).catch(function(){});
+</script>
+</body>
+</html>
